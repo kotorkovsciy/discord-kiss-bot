@@ -12,26 +12,18 @@ var commandHandlers = []CommandHandler{
 
 func Register(s *discordgo.Session, guildID string) error {
 	for _, cmd := range commandHandlers {
-		var err error
+		_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, &discordgo.ApplicationCommand{
+			Name:        cmd.Name(),
+			Description: cmd.Description(),
+			Options:     cmd.Options(),
+		})
+		if err != nil {
+			return err
+		}
+
 		if guildID != "" {
-			_, err = s.ApplicationCommandCreate(s.State.User.ID, guildID, &discordgo.ApplicationCommand{
-				Name:        cmd.Name(),
-				Description: cmd.Description(),
-				Options:     cmd.Options(),
-			})
-			if err != nil {
-				return err
-			}
 			log.Printf("Command '%s' successfully registered for guild '%s'.", cmd.Name(), guildID)
 		} else {
-			_, err = s.ApplicationCommandCreate(s.State.User.ID, "", &discordgo.ApplicationCommand{
-				Name:        cmd.Name(),
-				Description: cmd.Description(),
-				Options:     cmd.Options(),
-			})
-			if err != nil {
-				return err
-			}
 			log.Printf("Command '%s' successfully registered globally.", cmd.Name())
 		}
 	}
