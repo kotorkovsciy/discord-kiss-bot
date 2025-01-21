@@ -10,7 +10,6 @@ build: $(BUILD_DIR)/$(BINARY_NAME)
 
 $(BUILD_DIR)/$(BINARY_NAME): $(SOURCES)
 	@echo "Build project"
-	@mkdir -p $(BUILD_DIR)
 	go build $(GOFLAGS) -o $@ $(SOURCES)
 
 run: build
