@@ -3,8 +3,6 @@ package config
 import (
 	"errors"
 	"os"
-
-	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -13,25 +11,16 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	if val, ok := os.LookupEnv("path_env"); ok {
-		viper.SetConfigFile(val)
-	} else {
-		viper.SetConfigFile(".env")
-	}
+	token := os.Getenv("DISCORD_BOT_TOKEN")
 
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
-	}
-
-	token := viper.GetString("DISCORD_BOT_TOKEN")
 	if token == "" {
-		return nil, errors.New("missing DISCORD_BOT_TOKEN in configuration")
+		return nil, errors.New("missing DISCORD_BOT_TOKEN in environment variables")
 	}
+
+	guildID := os.Getenv("GUILD_ID")
 
 	return &Config{
 		Token:   token,
-		GuildID: viper.GetString("GuildID"),
+		GuildID: guildID,
 	}, nil
 }
