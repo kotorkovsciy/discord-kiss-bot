@@ -2,9 +2,10 @@ package commands
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kotorkovsciy/discord-kiss-bot/pkg/logger"
 )
 
 type KissCommand struct{}
@@ -29,10 +30,14 @@ func (c *KissCommand) Options() []*discordgo.ApplicationCommandOption {
 }
 
 func (c *KissCommand) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log := logger.GetLogger()
+
 	user := i.ApplicationCommandData().Options[0].UserValue(s)
 	message := fmt.Sprintf("%s sent a kiss to %s! 💋", i.Member.User.Mention(), user.Mention())
 
-	log.Printf("Handling 'kiss' command: %s sent a kiss to %s.", i.Member.User.Username, user.Username)
+	log.Info("Handling 'kiss' command",
+		slog.String("sender", i.Member.User.Username),
+		slog.String("recipient", user.Username))
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -41,8 +46,13 @@ func (c *KissCommand) Handle(s *discordgo.Session, i *discordgo.InteractionCreat
 		},
 	})
 	if err != nil {
-		log.Printf("Failed to respond to 'kiss' command: %v", err)
+		log.Error("Failed to respond to 'kiss' command",
+			slog.String("sender", i.Member.User.Username),
+			slog.String("recipient", user.Username),
+			slog.String("error", err.Error()))
 	} else {
-		log.Printf("Successfully sent a kiss message from %s to %s.", i.Member.User.Username, user.Username)
+		log.Info("Successfully sent a kiss message",
+			slog.String("sender", i.Member.User.Username),
+			slog.String("recipient", user.Username))
 	}
 }

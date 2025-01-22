@@ -1,9 +1,10 @@
 package commands
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kotorkovsciy/discord-kiss-bot/pkg/logger"
 )
 
 var commandHandlers = []CommandHandler{
@@ -11,6 +12,8 @@ var commandHandlers = []CommandHandler{
 }
 
 func Register(s *discordgo.Session, guildID string) error {
+	log := logger.GetLogger()
+
 	for _, cmd := range commandHandlers {
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, &discordgo.ApplicationCommand{
 			Name:        cmd.Name(),
@@ -18,42 +21,59 @@ func Register(s *discordgo.Session, guildID string) error {
 			Options:     cmd.Options(),
 		})
 		if err != nil {
+			log.Error("Failed to register command",
+				slog.String("command", cmd.Name()),
+				slog.String("error", err.Error()))
 			return err
 		}
 
 		if guildID != "" {
-			log.Printf("Command '%s' successfully registered for guild '%s'.", cmd.Name(), guildID)
+			log.Info("Command successfully registered for guild",
+				slog.String("command", cmd.Name()),
+				slog.String("guildID", guildID))
 		} else {
-			log.Printf("Command '%s' successfully registered globally.", cmd.Name())
+			log.Info("Command successfully registered globally",
+				slog.String("command", cmd.Name()))
 		}
 	}
 	return nil
 }
 
 func Unregister(s *discordgo.Session) error {
+	log := logger.GetLogger()
+
 	cmds, err := s.ApplicationCommands(s.State.User.ID, "")
 	if err != nil {
+		log.Error("Failed to fetch commands for unregistration",
+			slog.String("error", err.Error()))
 		return err
 	}
 
 	for _, cmd := range cmds {
 		err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID)
 		if err != nil {
-			log.Printf("Failed to delete command '%s': %v", cmd.Name, err)
+			log.Warn("Failed to delete command",
+				slog.String("command", cmd.Name),
+				slog.String("error", err.Error()))
 		} else {
-			log.Printf("Command '%s' successfully deleted.", cmd.Name)
+			log.Info("Command successfully deleted",
+				slog.String("command", cmd.Name))
 		}
 	}
 	return nil
 }
 
 func HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log := logger.GetLogger()
+
 	for _, cmd := range commandHandlers {
 		if i.ApplicationCommandData().Name == cmd.Name() {
-			log.Printf("Handling interaction for command '%s'.", cmd.Name())
+			log.Info("Handling interaction for command",
+				slog.String("command", cmd.Name()))
 			cmd.Handle(s, i)
 			return
 		}
 	}
-	log.Printf("Received interaction with unknown command '%s'.", i.ApplicationCommandData().Name)
+	log.Warn("Received interaction with unknown command",
+		slog.String("command", i.ApplicationCommandData().Name))
 }

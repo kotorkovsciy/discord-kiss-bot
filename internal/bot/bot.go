@@ -1,11 +1,12 @@
 package bot
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kotorkovsciy/discord-kiss-bot/internal/commands"
 	"github.com/kotorkovsciy/discord-kiss-bot/pkg/config"
+	"github.com/kotorkovsciy/discord-kiss-bot/pkg/logger"
 )
 
 type Bot struct {
@@ -13,8 +14,11 @@ type Bot struct {
 }
 
 func New(cfg *config.Config) (*Bot, error) {
+	log := logger.GetLogger()
+
 	session, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
+		log.Error("Failed to create Discord session", slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -22,12 +26,14 @@ func New(cfg *config.Config) (*Bot, error) {
 
 	err = session.Open()
 	if err != nil {
+		log.Error("Failed to open Discord session", slog.String("error", err.Error()))
 		return nil, err
 	}
-	log.Println("Bot successfully started.")
+	log.Info("Bot successfully started")
 
 	err = commands.Register(session, cfg.GuildID)
 	if err != nil {
+		log.Error("Failed to register commands", slog.String("error", err.Error()))
 		return nil, err
 	}
 
@@ -35,12 +41,14 @@ func New(cfg *config.Config) (*Bot, error) {
 }
 
 func (b *Bot) Close() {
+	log := logger.GetLogger()
+
 	if err := commands.Unregister(b.session); err != nil {
-		log.Printf("Error while unregistering commands: %v", err)
+		log.Warn("Error while unregistering commands", slog.String("error", err.Error()))
 	}
 	if err := b.session.Close(); err != nil {
-		log.Printf("Error while closing the session: %v", err)
+		log.Warn("Error while closing the session", slog.String("error", err.Error()))
 	} else {
-		log.Println("Bot session closed successfully.")
+		log.Info("Bot session closed successfully")
 	}
 }
